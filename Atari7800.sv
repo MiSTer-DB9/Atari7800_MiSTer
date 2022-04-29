@@ -155,8 +155,10 @@ module emu
 	// 1 - D-/TX
 	// 2..6 - USR2..USR6
 	// Set USER_OUT to 1 to read from USER_IN.
-	input   [6:0] USER_IN,
-	output  [6:0] USER_OUT,
+	output			USER_OSD,
+	output		[1:0] USER_MODE,
+	input		[7:0] USER_IN,
+	output		[7:0] USER_OUT,	
 
 	input         OSD_STATUS
 );
@@ -1017,18 +1019,18 @@ always @(posedge clk_sys) begin
 end
 
 wire [7:0] snac_type = 8'd12;
-wire [3:0] snac_pa_in = {USER_IN[3], USER_IN[5], USER_IN[0], (status[6] ? ~USER_IN[2] : USER_IN[1])};
-wire [1:0] snac_id_in = {USER_IN[6], USER_IN[4]} & ((~status[5] || status[6]) ? 2'b00 : 2'b11); // FIXME: These may be backwards.
-wire snac_il_in = (status[6] ? USER_IN[4] : USER_IN[2]);
+wire [3:0] snac_pa_in = {USER_IN[2], USER_IN[1], USER_IN[7], (status[6] ? ~USER_IN[3] : USER_IN[5])};
+wire [1:0] snac_id_in = {USER_IN[6], USER_IN[0]} & ((~status[5] || status[6]) ? 2'b00 : 2'b11); // FIXME: These may be backwards.
+wire snac_il_in = (status[6] ? USER_IN[0] : USER_IN[3]);
 
-// Controller      Lightgun   Trakball   Paddle   Keypad  AmigaM   STM       Mister Pin
-// Pin 1 - Up      Trigger    Dir X               Row 0   VPulse   VHPulse   USER_IN[1]
-// Pin 2 - Down               Tog X               Row 1   HPulse   HPulse    USER_IN[0]
-// Pin 3 - Left               Dir Y      ButtonB  Row 2   VQPulse  VQPulse   USER_IN[5]
-// Pin 4 - Right              Tog Y      ButtonA  Row 3   VHPulse  VPulse    USER_IN[3]
-// Pin 5 - B Button                      Axis A   Col 2   Button3  Button3   USER_IN[4]
-// Pin 6 - Fire    Light      Button              Col 0   Button1  Button1   USER_IN[2]
-// Pin 9 - A Button                      Axis B   Col 1   Button2  Button2   USER_IN[6]
+// Controller      Lightgun   Trakball   Paddle   Keypad  AmigaM   STM       Mister Pin 	Mister_AV_PIN
+// Pin 1 - Up      Trigger    Dir X               Row 0   VPulse   VHPulse   USER_IN[1]		USER_IN[5]
+// Pin 2 - Down               Tog X               Row 1   HPulse   HPulse    USER_IN[0]     USER_IN[7]
+// Pin 3 - Left               Dir Y      ButtonB  Row 2   VQPulse  VQPulse   USER_IN[5]     USER_IN[1]
+// Pin 4 - Right              Tog Y      ButtonA  Row 3   VHPulse  VPulse    USER_IN[3]     USER_IN[2]
+// Pin 5 - B Button                      Axis A   Col 2   Button3  Button3   USER_IN[4]     USER_IN[0]
+// Pin 6 - Fire    Light      Button              Col 0   Button1  Button1   USER_IN[2]     USER_IN[3]
+// Pin 9 - A Button                      Axis B   Col 1   Button2  Button2   USER_IN[6]     USER_IN[6]
 // Pin 7 - +5v
 // Pin 8 - Gnd
 
