@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-CORE_NAME="S32X_MiSTer"
+CORE_NAME="Atari7800_MiSTer"
 MAIN_BRANCH="master"
 COMPILATION_OUTPUT="output_files/Atari7800.rbf"
 
