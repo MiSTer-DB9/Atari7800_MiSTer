@@ -4,7 +4,7 @@
 set -euo pipefail
 
 UPSTREAM_REPO="https://github.com/MiSTer-devel/Atari7800_MiSTer"
-CORE_NAME="Atari7800_MiSTer"
+CORE_NAME="Atari7800"
 MAIN_BRANCH="master"
 
 echo "Fetching upstream:"
