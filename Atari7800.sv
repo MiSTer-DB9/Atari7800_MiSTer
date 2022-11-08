@@ -40,13 +40,14 @@ module emu
 	output        VGA_F1,
 	output [1:0]  VGA_SL,
 	output        VGA_SCALER, // Force VGA scaler
+	output        VGA_DISABLE, // analog out is off
 
 	input  [11:0] HDMI_WIDTH,
 	input  [11:0] HDMI_HEIGHT,
 	output        HDMI_FREEZE,
 
 `ifdef MISTER_FB
-	// Use framebuffer in DDRAM (USE_FB=1 in qsf)
+	// Use framebuffer in DDRAM
 	// FB_FORMAT:
 	//    [2:0] : 011=8bpp(palette) 100=16bpp 101=24bpp 110=32bpp
 	//    [3]   : 0=16bits 565 1=16bits 1555
@@ -175,6 +176,7 @@ assign LED_DISK  = 0;
 assign LED_POWER = 0;
 
 assign VGA_SCALER = 0;
+assign VGA_DISABLE = 0;
 
 assign {UART_RTS, UART_TXD, UART_DTR} = 0;
 assign {DDRAM_CLK, DDRAM_BURSTCNT, DDRAM_ADDR, DDRAM_DIN, DDRAM_BE, DDRAM_RD, DDRAM_WE} = 0;
@@ -225,7 +227,7 @@ reg old_cart_download;
 // 0         1         2         3          4         5         6
 // 01234567890123456789012345678901 23456789012345678901234567890123
 // 0123456789ABCDEFGHIJKLMNOPQRSTUV 0123456789ABCDEFGHIJKLMNOPQRSTUV
-// XXXXXXXX XXXXXXXXXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXXXXXX    XXXXXXXX
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXXXXXXX   XXXXXXXX
 
 `include "build_id.v"
 parameter CONF_STR = {
@@ -259,6 +261,7 @@ parameter CONF_STR = {
 	"P2o69,Port1 Input,Auto,None,Joystick,Lightgun,Paddle,Trakball,Keypad,Driving,STMouse,AmigaMouse,BoosterGrip,Robotron,SaveKey,SNAC;",
 	"P2oAD,Port2 Input,Auto,None,Joystick,Lightgun,Paddle,Trakball,Keypad,Driving,STMouse,AmigaMouse,BoosterGrip,Robotron,SaveKey,SNAC;",
 	"h1P2O5,SNAC Analog,Yes,No;",
+	"P2oK,Allow Multi Paddles,No,Yes;",
 	"h1P2O6,Sega Phaser Mode,No,Yes;",
 	"P2oH,Swap Paddle A<->B,No,Yes;",
 	"P2oE,Quadtari,Off,On;",
@@ -277,7 +280,7 @@ parameter CONF_STR = {
 	"P3,Advanced;",
 	"P3OH,Bypass Bios,Yes,No;",
 	"P3O1,Clear Memory,Zero,Random;",
-	"P3O7,Pokey IRQ Enabled,No,Yes;",
+	"P3O8,Pokey IRQ Enabled,No,Yes;",
 	"D2P3OL,CPU Driver,TIA,Maria;",
 	"-;",
 	"o3,Pause Core on OSD,Off,On;",
@@ -304,7 +307,7 @@ parameter CONF_STR = {
 
 
 wire  [1:0] buttons;
-logic [63:0] status, status_in;
+logic [127:0] status, status_in;
 wire         status_set;
 wire        forced_scandoubler;
 wire        img_mounted;
@@ -508,7 +511,7 @@ Atari7800 main
 	.pal_temp     (status[31:30]),
 	.tia_mode     (tia_mode && ~status[17]),
 	.bypass_bios  (~status[17]),
-	.pokey_irq    (status[7]),
+	.pokey_irq    (status[8]),
 	.hsc_en       (~use_sk && (~|status[19:18] && (|cart_save || cart_xm[0]) ? 1'b1 : status[18])),
 	.hsc_ram_dout (hsc_ram_dout),
 	.hsc_ram_cs   (hsc_ram_cs),
@@ -803,10 +806,12 @@ paddle_chooser paddles
 	.mask       (paddle_mask),
 	.enable0    (1'b1),
 	.enable1    (1'b1),
+	.use_multi  (status[52]),
 	.mouse      (ps2_mouse),
 	.analog     ({joya_3, joya_2, joya_1, joya_0}),
 	.paddle     ({pd_3, pd_2, pd_1, pd_0}),
 	.buttons_in ({joy3[9], joy2[9], joy1[9], joy0[9]}),
+	.alt_b_in   ({joy3[5], joy2[5], joy1[5], joy0[5]}),
 	
 	.assigned   ({pad3_assigned, pad2_assigned, pad1_assigned, pad0_assigned}),
 	.pd_out     ({pad_ax[3], pad_ax[2], pad_ax[1], pad_ax[0]}),
