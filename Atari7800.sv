@@ -164,6 +164,15 @@ module emu
 	input         OSD_STATUS
 );
 
+wire         CLK_JOY = CLK_50M;         //Assign clock between 40-50Mhz
+wire   [2:0] JOY_FLAG  = {status[65],status[66],status[64]}; //Assign 3 bits of status (66:64)
+wire         JOY_CLK, JOY_LOAD, JOY_SPLIT, JOY_MDSEL;
+wire   [5:0] JOY_MDIN  = JOY_FLAG[2] ? {USER_IN[6],USER_IN[3],USER_IN[5],USER_IN[7],USER_IN[1],USER_IN[2]} : '1;
+wire         JOY_DATA  = JOY_FLAG[1] ? USER_IN[5] : '1;
+//assign       USER_OUT  = JOY_FLAG[2] ? {3'b111,JOY_SPLIT,3'b111,JOY_MDSEL} : JOY_FLAG[1] ? {6'b111111,JOY_CLK,JOY_LOAD} : '1;
+assign       USER_MODE = JOY_FLAG[2:1] ;
+assign       USER_OSD  = joydb_1[10] & joydb_1[6];
+
 assign BUTTONS   = 0;
 
 assign {UART_RTS, UART_TXD, UART_DTR} = 0;
@@ -256,6 +265,9 @@ parameter CONF_STR = {
 	"H3P1FC3,PAL,Load Palette;",
 	"P2,Peripherals;",
 	"P2OIJ,High Score Cart,Auto,On,Off;",
+	"P2-;",
+	"P2O[66:65],UserIO Joystick,Off,DB9MD,DB15 ;",
+	"P2O[64],UserIO Players, 1 Player,2 Players;",
 	"P2O7,Swap Joysticks,No,Yes;",
 	"P2-;",
 	"P2o69,Port1 Input,Auto,None,Joystick,Lightgun,Paddle,Trakball,Keypad,Driving,STMouse,AmigaMouse,BoosterGrip,Robotron,SaveKey,SNAC;",
@@ -321,7 +333,7 @@ wire        ioctl_wr;
 wire [7:0]  ioctl_index;
 wire [21:0] gamma_bus;
 
-wire [15:0] joy0,joy1,joy2,joy3;
+wire [15:0] joy0_USB,joy1_USB,joy2_USB,joy3_USB;
 wire [15:0] joya_0,joya_1,joya_2,joya_3,joyar_0,joyar_1,joyar_2,joyar_3;
 wire  [7:0] pd_0,pd_1,pd_2,pd_3;
 wire        ioctl_wait;
@@ -345,6 +357,43 @@ logic [1:0] last_paddle;
 logic pad0_assigned, pad1_assigned, pad2_assigned, pad3_assigned;
 logic old_auto_paddle, auto_paddle;
 
+//  R S - F2 F1 U D L R
+wire [31:0] joy0 = joydb_1ena ? (OSD_STATUS? 32'b000000 : {joydb_1[10],joydb_1[11],1'b0,joydb_1[6],joydb_1[5]|joydb_1[4],joydb_1[3:0]}) : joy0_USB;
+wire [31:0] joy1 = joydb_2ena ? (OSD_STATUS? 32'b000000 : {joydb_2[10],joydb_2[11],1'b0,joydb_2[6],joydb_2[5]|joydb_2[4],joydb_2[3:0]}) : joydb_1ena ? joy0_USB : joy1_USB;
+wire [31:0] joy2 = joydb_1ena ? joy0_USB : joydb_2ena ? joy1_USB : joy2_USB;
+wire [31:0] joy3 = joydb_1ena ? joy1_USB : joydb_2ena ? joy2_USB : joy3_USB;
+
+wire [15:0] joydb_1 = JOY_FLAG[2] ? JOYDB9MD_1 : JOY_FLAG[1] ? JOYDB15_1 : '0;
+wire [15:0] joydb_2 = JOY_FLAG[2] ? JOYDB9MD_2 : JOY_FLAG[1] ? JOYDB15_2 : '0;
+wire        joydb_1ena = |JOY_FLAG[2:1]              ;
+wire        joydb_2ena = |JOY_FLAG[2:1] & JOY_FLAG[0];
+
+//----BA 9876543210
+//----MS ZYXCBAUDLR
+reg [15:0] JOYDB9MD_1,JOYDB9MD_2;
+joy_db9md joy_db9md
+(
+  .clk       ( CLK_JOY    ), //40-50MHz
+  .joy_split ( JOY_SPLIT  ),
+  .joy_mdsel ( JOY_MDSEL  ),
+  .joy_in    ( JOY_MDIN   ),
+  .joystick1 ( JOYDB9MD_1 ),
+  .joystick2 ( JOYDB9MD_2 )
+);
+
+//----BA 9876543210
+//----LS FEDCBAUDLR
+reg [15:0] JOYDB15_1,JOYDB15_2;
+joy_db15 joy_db15
+(
+  .clk       ( CLK_JOY   ), //48MHz
+  .JOY_CLK   ( JOY_CLK   ),
+  .JOY_DATA  ( JOY_DATA  ),
+  .JOY_LOAD  ( JOY_LOAD  ),
+  .joystick1 ( JOYDB15_1 ),
+  .joystick2 ( JOYDB15_2 )
+);
+
 hps_io #(.CONF_STR(CONF_STR)) hps_io
 (
 	.clk_sys            (clk_sys),
@@ -354,10 +403,11 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 	.forced_scandoubler (forced_scandoubler),
 	.gamma_bus          (gamma_bus),
 
-	.joystick_0         (joy0),
-	.joystick_1         (joy1),
-	.joystick_2         (joy2),
-	.joystick_3         (joy3),
+	.joy_raw(OSD_STATUS? (joydb_1[5:0]|joydb_2[5:0]) : 6'b000000 ),
+	.joystick_0         (joy0_USB),
+	.joystick_1         (joy1_USB),
+	.joystick_2         (joy2_USB),
+	.joystick_3         (joy3_USB),
 	.joystick_l_analog_0  (joya_0),
 	.joystick_l_analog_1  (joya_1),
 	.joystick_l_analog_2  (joya_2),
@@ -1015,8 +1065,8 @@ wire [3:0] snac_pa_in = {USER_IN[2], USER_IN[1], USER_IN[7], (status[6] ? ~USER_
 wire [1:0] snac_id_in = {USER_IN[6], USER_IN[0]} & ((~status[5] || status[6]) ? 2'b00 : 2'b11); // FIXME: These may be backwards.
 wire snac_il_in = (status[6] ? USER_IN[0] : USER_IN[3]);
 
-// Controller      Lightgun   Trakball   Paddle   Keypad  AmigaM   STM       Mister Pin 	Mister_AV_PIN
-// Pin 1 - Up      Trigger    Dir X               Row 0   VPulse   VHPulse   USER_IN[1]		USER_IN[5]
+// Controller      Lightgun   Trakball   Paddle   Keypad  AmigaM   STM       Mister Pin     Mister_AV_PIN
+// Pin 1 - Up      Trigger    Dir X               Row 0   VPulse   VHPulse   USER_IN[1]     USER_IN[5]
 // Pin 2 - Down               Tog X               Row 1   HPulse   HPulse    USER_IN[0]     USER_IN[7]
 // Pin 3 - Left               Dir Y      ButtonB  Row 2   VQPulse  VQPulse   USER_IN[5]     USER_IN[1]
 // Pin 4 - Right              Tog Y      ButtonA  Row 3   VHPulse  VPulse    USER_IN[3]     USER_IN[2]
@@ -1081,7 +1131,7 @@ always_comb begin
 
 	is_snac0 = porta_type == snac_type;
 	is_snac1 = portb_type == snac_type;
-	USER_OUT = '1;
+	USER_OUT = JOY_FLAG[2] ? {3'b111,JOY_SPLIT,3'b111,JOY_MDSEL} : JOY_FLAG[1] ? {6'b111111,JOY_CLK,JOY_LOAD} : '1;
 	if (is_snac0) begin
 		{USER_OUT[6], USER_OUT[4], USER_OUT[3], USER_OUT[5], USER_OUT[0], USER_OUT[1]} = {iout[1:0], PAout[7:4]};
 	end else if (is_snac1) begin
