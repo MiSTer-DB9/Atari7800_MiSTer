@@ -304,8 +304,10 @@ parameter CONF_STR = {
 	"P2,Peripherals;",
 	"P2OIJ,High Score Cart,Auto,On,Off;",
 	"P2-;",
-	"P2O[66:65],UserIO Joystick,Off,DB9MD,DB15 ;",
-	"P2O[64],UserIO Players, 1 Player,2 Players;",
+	// [MiSTer-DB9-Pro BEGIN] - Saturn-first UserIO selector + 1P/2P (joy_type at status[127:126], joy_2p at status[125])
+	"P2O[127:126],UserIO Joystick,Off,Saturn,DB9MD,DB15;",
+	"P2O[125],UserIO Players, 1 Player,2 Players;",
+	// [MiSTer-DB9-Pro END]
 	"P2O7,Swap Joysticks,No,Yes;",
 	"P2-;",
 	"P2o69,Port1 Input,Auto,None,Joystick,Lightgun,Paddle,Trakball,Keypad,Driving,STMouse,AmigaMouse,BoosterGrip,Robotron,SaveKey,SNAC;",
