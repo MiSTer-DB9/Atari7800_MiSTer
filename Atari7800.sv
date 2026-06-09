@@ -431,8 +431,15 @@ logic pad0_assigned, pad1_assigned, pad2_assigned, pad3_assigned;
 logic old_auto_paddle, auto_paddle;
 
 //  R S - F2 F1 U D L R
-wire [31:0] joy0 = joydb_1ena ? (OSD_STATUS? 32'b000000 : {joydb_1[10],joydb_1[11],1'b0,joydb_1[6],joydb_1[5]|joydb_1[4],joydb_1[3:0]}) : joy0_USB;
-wire [31:0] joy1 = joydb_2ena ? (OSD_STATUS? 32'b000000 : {joydb_2[10],joydb_2[11],1'b0,joydb_2[6],joydb_2[5]|joydb_2[4],joydb_2[3:0]}) : joydb_1ena ? joy0_USB : joy1_USB;
+// [MiSTer-DB9 BEGIN] - DB9/SNAC8 support: programmable remap matrix
+// joydb_*_mapped carry the DB9/DB15/Saturn buttons rewired into MiSTer-standard
+// order per the user's per-core/per-devtype map (UIO 0xFD). CONF_STR-derived
+// default (gamepad_defaults) replaces the old fixed permutation (incl. the
+// Fire1 = raw5|raw4 OR-combo, now single name-faithful A); layout is redefinable
+// in the OSD "Define DB9 buttons" flow.
+wire [31:0] joy0 = joydb_1ena ? (OSD_STATUS? 32'b000000 : joydb_1_mapped[8:0]) : joy0_USB;
+wire [31:0] joy1 = joydb_2ena ? (OSD_STATUS? 32'b000000 : joydb_2_mapped[8:0]) : joydb_1ena ? joy0_USB : joy1_USB;
+// [MiSTer-DB9 END]
 wire [31:0] joy2 = joydb_1ena ? joy0_USB : joydb_2ena ? joy1_USB : joy2_USB;
 wire [31:0] joy3 = joydb_1ena ? joy1_USB : joydb_2ena ? joy2_USB : joy3_USB;
 
