@@ -367,6 +367,7 @@ parameter CONF_STR = {
 	"P3OH,Bypass Bios,Yes,No;",
 	"P3O1,Clear Memory,Zero,Random;",
 	"P3O8,Pokey IRQ Enabled,No,Yes;",
+	"P3O[73],Minnie Sound Chip,Off,On;",
 	"D2P3OL,CPU Driver,TIA,Maria;",
 	"-;",
 	"o3,Pause Core on OSD,Off,On;",
@@ -664,6 +665,7 @@ Atari7800 main
 	.tia_mode     (tia_mode && ~status[17]),
 	.bypass_bios  (~status[17]),
 	.pokey_irq    (status[8]),
+	.minnie_en    (status[73]),
 	.hsc_en       (~use_sk && (~|status[19:18] && (|cart_save || cart_xm[0]) ? 1'b1 : status[18])),
 	.hsc_ram_dout (hsc_ram_dout),
 	.hsc_ram_cs   (hsc_ram_cs),
@@ -809,13 +811,15 @@ assign cart_write_addr = (ioctl_addr >= 8'd128) && cart_is_7800 ? (ioctl_addr[24
 spram #(
 	.addr_width(14),
 	.mem_name("Cart"),
-	.mem_init_file("mem0.mif")
+	.mem_init_file("mem0.mif"),
+	.sim_init_file("rtl/mem0.hex")
 ) cart
 (
 	.address (cart_addr),
 	.clock   (clk_sys),
-	.data    (),
-	.wren    (),
+	.data    (8'd0),
+	.wren    (1'b0),
+	.cs      (1'b1),
 	.q       (cart_data)
 );
 
@@ -826,6 +830,7 @@ spram #(.addr_width(15), .mem_name("BIOS")) bios
 	.clock   (clk_sys),
 	.data    (ioctl_dout),
 	.wren    (ioctl_wr & bios_download),
+	.cs      (1'b1),
 	.q       (bios_data)
 );
 
