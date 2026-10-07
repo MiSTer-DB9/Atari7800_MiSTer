@@ -446,8 +446,8 @@ logic old_auto_paddle, auto_paddle;
 // default (gamepad_defaults) replaces the old fixed permutation (incl. the
 // Fire1 = raw5|raw4 OR-combo, now single name-faithful A); layout is redefinable
 // in the OSD "Define DB9 buttons" flow.
-wire [31:0] joy0 = joydb_1ena ? (OSD_STATUS? 32'b000000 : joydb_1_mapped[8:0]) : joy0_USB;
-wire [31:0] joy1 = joydb_2ena ? (OSD_STATUS? 32'b000000 : joydb_2_mapped[8:0]) : joydb_1ena ? joy0_USB : joy1_USB;
+wire [31:0] joy0 = joydb_1ena ? (OSD_STATUS? 32'b000000 : joydb_1_mapped[12:0]) : joy0_USB;
+wire [31:0] joy1 = joydb_2ena ? (OSD_STATUS? 32'b000000 : joydb_2_mapped[12:0]) : joydb_1ena ? joy0_USB : joy1_USB;
 // [MiSTer-DB9 END]
 wire [31:0] joy2 = joydb_1ena ? joy0_USB : joydb_2ena ? joy1_USB : joy2_USB;
 wire [31:0] joy3 = joydb_1ena ? joy1_USB : joydb_2ena ? joy2_USB : joy3_USB;
